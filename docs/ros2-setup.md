@@ -1,29 +1,18 @@
-# ROS 2 Lyrical Setup (Omarchy / Arch Linux)
+# ROS 2 Lyrical Setup
 
-This sandbox uses **ROS 2 Lyrical Luth**. ROS 2 does not officially support Arch Linux,
-so ROS runs inside an **Ubuntu 26.04 container managed by [distrobox](https://distrobox.it/)**.
+This sandbox uses **ROS 2 Lyrical Luth**, running inside an **Ubuntu 26.04 container
+managed by [distrobox](https://distrobox.it/)** on Omarchy.
 
 Distrobox is not a VM: the container shares the host kernel, home directory, network,
 display (Wayland/X11), GPU and USB devices. Code in `~/Work/...` is visible from both
 the host and the container.
 
 ```
-Omarchy (Arch host)
+Omarchy (host)
 └── docker
     └── distrobox container "ros-lyrical" (Ubuntu 26.04)
         └── /opt/ros/lyrical  (ros-lyrical-desktop + ros-dev-tools)
 ```
-
-## Why distrobox instead of a native install
-
-- Official binary packages exist only for Ubuntu 26.04, RHEL and Windows.
-- The AUR packages (`ros2-lyrical`, `ros2-lyrical-base`) build everything from source.
-  This takes hours, can run out of RAM, and tends to break after `pacman -Syu` updates
-  Python, Boost or Qt.
-- With Ubuntu in a container, every extra package is one `apt install ros-lyrical-<pkg>`
-  away, and the official docs and tutorials work unchanged.
-
----
 
 ## What was done
 
@@ -184,10 +173,3 @@ To rebuild from scratch, remove the container and repeat the steps under [What w
 | `source: no such file or directory: /opt/ros/lyrical/setup.zsh` on the host | The line in `~/.zshrc` is missing the `[ -f ... ] &&` guard. |
 | Nodes in different terminals can't see each other | Both terminals must use the same `ROS_DOMAIN_ID` (default `0`). A VPN (e.g. NordVPN) can interfere with DDS discovery; try disconnecting it. |
 | GUI doesn't open | Run `xhost +si:localuser:$USER` on the host, then try again. |
-
----
-
-## macOS
-
-Distrobox does not run on macOS. Use an Ubuntu 26.04 VM (UTM/Parallels) or an OrbStack
-Linux machine, then follow the steps under [Inside the container](#2-inside-the-container-distrobox-enter-ros-lyrical).
