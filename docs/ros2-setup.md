@@ -101,6 +101,8 @@ rqt
 
 Windows open directly on the Omarchy desktop.
 
+For a hands-on first example, see [turtlesim.md](turtlesim.md).
+
 ### Useful commands
 
 ```bash

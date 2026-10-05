@@ -1,0 +1,45 @@
+# YAML version of turtlesim_mimic.launch.py: two turtlesim windows where
+# turtle 2 copies every move of turtle 1.
+#
+# Run inside the ros-lyrical container:
+#
+#   ros2 launch launch/turtlesim_mimic.launch.yaml
+#   ros2 launch launch/turtlesim_mimic.launch.yaml background_b:=200
+
+launch:
+  - arg:
+      name: background_b
+      default: "255"
+      description: Blue component (0-255) of both windows background
+
+  # Two simulators, kept apart by namespace so their topics don't clash:
+  # /turtlesim1/turtle1/... and /turtlesim2/turtle1/...
+  - node:
+      pkg: turtlesim
+      exec: turtlesim_node
+      namespace: turtlesim1
+      name: sim
+      param:
+        - name: background_b
+          value: $(var background_b)
+
+  - node:
+      pkg: turtlesim
+      exec: turtlesim_node
+      namespace: turtlesim2
+      name: sim
+      param:
+        - name: background_b
+          value: $(var background_b)
+
+  # Reads the pose of turtle 1 and publishes matching velocity
+  # commands to turtle 2.
+  - node:
+      pkg: turtlesim
+      exec: mimic
+      name: mimic
+      remap:
+        - from: /input/pose
+          to: /turtlesim1/turtle1/pose
+        - from: /output/cmd_vel
+          to: /turtlesim2/turtle1/cmd_vel
