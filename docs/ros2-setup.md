@@ -51,14 +51,26 @@ sudo apt install -y ros-lyrical-desktop ros-dev-tools
 
 ### 3. Shell setup
 
-`~/.zshrc` sources the ROS environment. The home directory is shared with the host,
-and `/opt/ros` only exists inside the container, so the line is guarded:
+`~/.zshrc` sources the ROS environment and enables tab completion for `ros2` and
+`colcon`. The home directory is shared with the host, and `/opt/ros` only exists inside
+the container, so the block is guarded:
 
 ```bash
-[ -f /opt/ros/lyrical/setup.zsh ] && source /opt/ros/lyrical/setup.zsh
+if [ -f /opt/ros/lyrical/setup.zsh ]; then
+  source /opt/ros/lyrical/setup.zsh
+  autoload -U +X bashcompinit && bashcompinit
+  eval "$(register-python-argcomplete ros2)"
+  eval "$(register-python-argcomplete colcon)"
+fi
 ```
 
-(If the container shell is bash, use `setup.bash` in `~/.bashrc` instead.)
+`python3-argcomplete` and `python3-colcon-argcomplete` come with `ros-dev-tools`. The
+explicit `register-python-argcomplete` calls are needed because the zsh hook shipped
+with ROS doesn't register `ros2` with argcomplete 3.x. The block must come after
+`compinit` runs (e.g. after `source $ZSH/oh-my-zsh.sh`).
+
+(If the container shell is bash, sourcing `setup.bash` in `~/.bashrc` is enough;
+completion is set up automatically.)
 
 ---
 
@@ -173,5 +185,6 @@ To rebuild from scratch, remove the container and repeat the steps under [What w
 | `permission denied ... /var/run/docker.sock` | User is not in the `docker` group, or the session hasn't picked it up. Run `sudo usermod -aG docker $USER`, then log out and back in (or `newgrp docker`). |
 | `ros2: command not found` | You are on the host, not in the container (`distrobox enter ros-lyrical`), or the setup file isn't sourced. |
 | `source: no such file or directory: /opt/ros/lyrical/setup.zsh` on the host | The line in `~/.zshrc` is missing the `[ -f ... ] &&` guard. |
+| `ros2 <Tab>` / `colcon <Tab>` doesn't complete | The `register-python-argcomplete` lines from [Shell setup](#3-shell-setup) are missing, or they run before `compinit`. Open a new shell after editing `~/.zshrc`. |
 | Nodes in different terminals can't see each other | Both terminals must use the same `ROS_DOMAIN_ID` (default `0`). A VPN (e.g. NordVPN) can interfere with DDS discovery; try disconnecting it. |
 | GUI doesn't open | Run `xhost +si:localuser:$USER` on the host, then try again. |
