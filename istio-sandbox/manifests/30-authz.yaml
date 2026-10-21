@@ -1,0 +1,61 @@
+# Deny everything by default, then allow only the call chain:
+#   ingress gateway -> frontend -> orders -> inventory
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: mesh-demo
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-gateway-to-frontend
+  namespace: mesh-demo
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-frontend-to-orders
+  namespace: mesh-demo
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/mesh-demo/sa/frontend"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/orders"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-orders-to-inventory
+  namespace: mesh-demo
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/mesh-demo/sa/orders"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/stock"]

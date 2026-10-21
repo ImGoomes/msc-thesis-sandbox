@@ -1,0 +1,30 @@
+# Passed to `istioctl install -f`. Demo profile + NodePort gateway + tracing to Jaeger.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  profile: demo
+  meshConfig:
+    enableTracing: true
+    extensionProviders:
+      - name: jaeger
+        opentelemetry:
+          service: jaeger-collector.istio-system.svc.cluster.local
+          port: 4317
+  components:
+    egressGateways:
+      - name: istio-egressgateway
+        enabled: false
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          service:
+            type: NodePort
+            ports:
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              - name: http2
+                port: 80
+                targetPort: 8080
+                nodePort: 30080

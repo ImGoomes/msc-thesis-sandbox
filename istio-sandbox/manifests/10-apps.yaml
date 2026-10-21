@@ -1,0 +1,193 @@
+# --- frontend ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frontend
+  namespace: mesh-demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: mesh-demo
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-v1
+  namespace: mesh-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: v1
+    spec:
+      serviceAccountName: frontend
+      containers:
+        - name: frontend
+          image: mesh-demo/frontend:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ORDERS_URL
+              value: "http://orders:8000/orders"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+---
+# --- orders ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orders
+  namespace: mesh-demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  namespace: mesh-demo
+  labels:
+    app: orders
+spec:
+  selector:
+    app: orders
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-v1
+  namespace: mesh-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: orders
+        version: v1
+    spec:
+      serviceAccountName: orders
+      containers:
+        - name: orders
+          image: mesh-demo/orders:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: INVENTORY_URL
+              value: "http://inventory:8000/stock"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+---
+# --- inventory ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: inventory
+  namespace: mesh-demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory
+  namespace: mesh-demo
+  labels:
+    app: inventory
+spec:
+  selector:
+    app: inventory
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-v1
+  namespace: mesh-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: inventory
+        version: v1
+    spec:
+      serviceAccountName: inventory
+      containers:
+        - name: inventory
+          image: mesh-demo/inventory:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: VERSION
+              value: "v1"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-v2
+  namespace: mesh-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: inventory
+        version: v2
+    spec:
+      serviceAccountName: inventory
+      containers:
+        - name: inventory
+          image: mesh-demo/inventory:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: VERSION
+              value: "v2"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000

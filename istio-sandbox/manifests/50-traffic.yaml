@@ -1,0 +1,47 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: inventory
+  namespace: mesh-demo
+spec:
+  host: inventory
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+---
+# Canary: 90% of calls from orders go to inventory v1, 10% to v2.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: inventory
+  namespace: mesh-demo
+spec:
+  hosts: [inventory]
+  http:
+    - retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,connect-failure,reset
+      # Uncomment to experiment with fault injection, then re-apply this file.
+      # fault:
+      #   delay:
+      #     percentage:
+      #       value: 50
+      #     fixedDelay: 3s
+      #   abort:
+      #     percentage:
+      #       value: 20
+      #     httpStatus: 503
+      route:
+        - destination:
+            host: inventory
+            subset: v1
+          weight: 90
+        - destination:
+            host: inventory
+            subset: v2
+          weight: 10
