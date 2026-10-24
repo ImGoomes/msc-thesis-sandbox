@@ -1,0 +1,12 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # The Istio ingress gateway is exposed as NodePort 30080 -> localhost:8081
+    # (8080 is left to the sidecar sandbox so both clusters can run side by side).
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8081
+        protocol: TCP
+  - role: worker
+  - role: worker

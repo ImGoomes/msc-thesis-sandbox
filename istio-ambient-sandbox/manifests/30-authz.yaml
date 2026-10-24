@@ -1,0 +1,102 @@
+# Same call chain as the sidecar sandbox:
+#   ingress gateway -> frontend -> orders -> inventory
+# but split across the two ambient enforcement points:
+#   - ztunnel (`selector`): L4 only, sees who opened the connection.
+#   - waypoint (`targetRefs`): L7, sees the original caller plus method/path.
+# Calls to orders/inventory arrive at their ztunnel from the waypoint, so ztunnel
+# only has to trust the waypoint; the per-caller checks happen there.
+
+# --- ztunnel (L4) ---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: mesh-demo
+spec: {}
+---
+# The ingress gateway talks to frontend directly (it does not use the waypoint).
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-gateway-to-frontend
+  namespace: mesh-demo
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-waypoint-to-orders
+  namespace: mesh-demo
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/mesh-demo/sa/waypoint"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-waypoint-to-inventory
+  namespace: mesh-demo
+spec:
+  selector:
+    matchLabels:
+      app: inventory
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/mesh-demo/sa/waypoint"]
+---
+# --- waypoint (L7) ---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-frontend-to-orders
+  namespace: mesh-demo
+spec:
+  targetRefs:
+    - kind: Service
+      group: ""
+      name: orders
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/mesh-demo/sa/frontend"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/orders"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-orders-to-inventory
+  namespace: mesh-demo
+spec:
+  targetRefs:
+    - kind: Service
+      group: ""
+      name: inventory
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/mesh-demo/sa/orders"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/stock"]

@@ -1,0 +1,9 @@
+# Pods join the mesh through ztunnel (no sidecar injection), and in-mesh traffic
+# to every Service in the namespace goes through the `waypoint` for L7 features.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mesh-demo
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: waypoint
